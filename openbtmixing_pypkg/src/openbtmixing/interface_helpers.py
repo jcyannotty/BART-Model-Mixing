@@ -133,21 +133,24 @@ def run_model(fpath, tc, cmd="openbtcli",
     Private function, run the cpp program via the command line using
     a subprocess.
 
-    This assumes that the folders that contain the OpenBT command line tools
-    and mpirun are in the PATH.  The mpirun that is found should be from an
-    MPI implementation compatible with the MPI implementation that was used to
-    build the OpenBT C++ command line tools.
+    This is hardcoded to use the OpenBT command line tools installed with the
+    package.  It requires that mpirun be in the PATH and that the mpirun that it
+    finds should be from an MPI implementation compatible with the MPI
+    implementation that was used to build the OpenBT C++ command line tools.
 
     .. todo::
         * What error checking should be done for fpath?
+        * Remove local_openbt_path and google_colab.
     """
-    KNOWN_COMMANDS = {
-        "openbtcli",
-        "openbtmixing", "openbtmixingpred", "openbtmixingwts",
-        "openbtmopareto", "openbtpred", "openbtsobol", "openbtvartivity"
-    }
+    PKG_ROOT = Path(__file__).parent.resolve()
+    BIN_PATH = PKG_ROOT.joinpath("bin")
+    # This should be matched to the CLTs installed in the package as specified
+    # in setup.py.
+    KNOWN_COMMANDS = {"openbtcli", "openbtpred", "openbtmixingwts"}
 
     # ----- ERROR CHECK ARGUMENTS
+    cmd_with_path = BIN_PATH.joinpath(cmd)
+
     if (not isinstance(fpath, str)) and (not isinstance(fpath, Path)):
         raise TypeError(f"fpath is not a string or Path object ({fpath})")
     elif not isinstance(tc, numbers.Integral):
@@ -156,8 +159,8 @@ def run_model(fpath, tc, cmd="openbtcli",
         raise ValueError(f"tc is not a positive integer ({tc})")
     elif cmd not in KNOWN_COMMANDS:
         raise ValueError(f"Unknown OpenBT command line tool {cmd}")
-    elif shutil.which(cmd) is None:
-        raise RuntimeError(f"Add to PATH the folder that contains {cmd}")
+    elif not cmd_with_path.is_file():
+        raise RuntimeError(f"Could not locate {cmd} in package installation")
     elif local_openbt_path != "":
         raise NotImplementedError("local_openbt_path not supported")
     elif google_colab:
@@ -170,8 +173,8 @@ def run_model(fpath, tc, cmd="openbtcli",
         raise RuntimeError(msg)
 
     try:
-        # MPI running OpenBT command line tool with both found through PATH
-        subprocess.run(["mpirun", "-np", str(tc), cmd, str(fpath)],
+        subprocess.run(["mpirun", "-np", str(tc),
+                       str(cmd_with_path), str(fpath)],
                        stdin=subprocess.DEVNULL,
                        capture_output=True, check=True)
     except subprocess.CalledProcessError as err:

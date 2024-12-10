@@ -224,8 +224,8 @@ int main(int argc, char* argv[])
 #ifndef SILENT
    cout << "\nMPI: node " << mpirank << " of " << mpitc << " processes." << endl;
 #endif
-   if(tc<=1) return 0; //need at least 2 processes!
-   if(tc!=mpitc) return 0; //mismatch between how MPI was started and how the data is prepared according to tc.
+   if(tc<=1) return 1; //need at least 2 processes!
+   if(tc!=mpitc) return 2; //mismatch between how MPI was started and how the data is prepared according to tc.
 // #else
 //    if(tc!=1) return 0; //serial mode should have no slave threads!
 #endif
@@ -333,7 +333,7 @@ int main(int argc, char* argv[])
    }
    int tempp = (unsigned int) p;
    MPI_Allreduce(MPI_IN_PLACE,&tempp,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
-   if(mpirank>0 && p != ((size_t) tempp)) { cout << "PROBLEM LOADING DATA" << endl; MPI_Finalize(); return 0;}
+   if(mpirank>0 && p != ((size_t) tempp)) { cout << "PROBLEM LOADING DATA" << endl; MPI_Finalize(); return 3;}
    p=(size_t)tempp;
 #endif
 
@@ -366,7 +366,7 @@ int main(int argc, char* argv[])
    }
    int tempk = (unsigned int) k;
    MPI_Allreduce(MPI_IN_PLACE,&tempk,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
-   if(mpirank>0 && k != ((size_t) tempk)) { cout << "PROBLEM LOADING DATA" << endl; MPI_Finalize(); return 0;}
+   if(mpirank>0 && k != ((size_t) tempk)) { cout << "PROBLEM LOADING DATA" << endl; MPI_Finalize(); return 4;}
    k=(size_t)tempk;
 #endif
    }
@@ -416,7 +416,7 @@ int main(int argc, char* argv[])
       int tempkd = (unsigned int) k;
       MPI_Allreduce(MPI_IN_PLACE,&tempkd,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
       //if(mpirank>0 && kdm != ((size_t) tempkd)) { cout << "PROBLEM LOADING DISCREPANCY DATA" << endl; MPI_Finalize(); return 0;}
-      if(mpirank>0 && ksd != ((size_t) tempkd)) { cout << "PROBLEM LOADING DISCREPANCY DATA" << endl; MPI_Finalize(); return 0;}
+      if(mpirank>0 && ksd != ((size_t) tempkd)) { cout << "PROBLEM LOADING DISCREPANCY DATA" << endl; MPI_Finalize(); return 5;}
    #endif   
    }   
 
@@ -490,10 +490,10 @@ int main(int argc, char* argv[])
       cout << "node " << mpirank << " loaded " << nsig << " from " << sfs <<endl;
 #endif
 #ifdef _OPENMPI
-      if(n!=nsig) { cout << "PROBLEM LOADING SIGMAV" << endl; MPI_Finalize(); return 0; }
+      if(n!=nsig) { cout << "PROBLEM LOADING SIGMAV" << endl; MPI_Finalize(); return 6; }
    }
 #else
-   if(n!=nsig) { cout << "PROBLEM LOADING SIGMAV" << endl; return 0; }
+   if(n!=nsig) { cout << "PROBLEM LOADING SIGMAV" << endl; return 7; }
 #endif
 
    double *sig=&sigmav[0];

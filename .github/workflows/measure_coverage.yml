@@ -1,0 +1,57 @@
+name: Measure OpenBTMixing Python Coverage
+env:
+  CLONE_PATH: ${{ github.workspace }}
+  PKG_ROOT:   ${{ github.workspace }}/openbtmixing_pypkg
+  COV_RAW:    ${{ github.workspace }}/coverage
+  COV_XML:    ${{ github.workspace }}/coverage.xml
+  COV_HTML:   ${{ github.workspace }}/htmlcov
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  #####----- FULL TESTING WITH COVERAGE
+  # This also confirms that tox with coverage & report works.
+  coverage:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        python-version: ["3.13"]
+
+    steps:
+    ##-- Setup Testing Environment
+    - name: Checkout OpenBTMixing
+      uses: actions/checkout@v4
+    - name: Install mpich
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install mpich
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup Python dependencies
+      run: $CLONE_PATH/.github/workflows/setup_base_python.sh ${{ runner.os }}
+    - name: Install Meson build system
+      run: $CLONE_PATH/.github/workflows/install_meson.sh ${{ github.workspace }} ${{ runner.os }}
+
+    ##-- Run full test suite with coverage
+    - name: Measure coverage-by-line
+      run: |
+        pushd $PKG_ROOT
+        COVERAGE_FILE=$COV_RAW COVERAGE_HTML=$COV_HTML COVERAGE_XML=$COV_XML tox -r -e coverage,report
+        popd
+
+    ##-- Publish full coverage report as artifact
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v4
+      with:
+        name: code-coverage-results
+        path: |
+            ${{ env.COV_RAW }}
+            ${{ env.COV_XML }}
+            ${{ env.COV_HTML }}

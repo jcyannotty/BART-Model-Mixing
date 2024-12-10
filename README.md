@@ -1,131 +1,130 @@
 # Open Bayesian Trees Project
 This repository includes new developments with Bayesian Additive Regression Trees and extends the original OpenBT repository created by Matt Pratola (https://bitbucket.org/mpratola/openbt/src/master/).
 Such extensions include Bayesian Model Mixing and Bayesian Calibration. 
-All of the Bayesian Tree code is written in C++. User interfaces constructed in R and Python allow one to easily run the software. The OpenBT project is also included in the Bayesian Model Mixing python package, *Taweret*, which is included in the Bayesian Analysis of Nuclear Dynamics sotware (see https://bandframework.github.io/). 
+All of the Bayesian Tree code is written in C++. User interfaces constructed in R and Python allow one to easily run the software.
+The BART Model Mixing software has been implemented in the [Taweret](https://github.com/TaweretOrg/Taweret/tree/main) Python package in conjunction with the [BAND](https://bandframework.github.io/) collaboration.
 
 
-# Installation for Python Users
+# Installation
+The heart of OpenBTMixing is a set of C++ tools that can be used directly via
+the command line or indirectly through the Python and R packages, which wrap
+them.  Typically these tools are built with an implementation of the Message
+Passing Interface (MPI) such as [Open MPI](https://www.open-mpi.org) or
+[MPICH](https://www.mpich.org) to enable distributed parallelization of
+computations.  In particular, the Python wrapper package is always built with
+MPI support.
 
-You can work with the BART-based model mixing method via the Taweret python package. Simply install Taweret and you can begin working. 
+The software and its distribution scheme have been developed to allow users to
+use OpenBTMixing with the MPI installation of their choice.  For instance, it
+can be built with MPI installations on leadership class platforms and clusters
+that were installed by experts and optimized for their specific platform.  As a
+result, however, the software is not distributed as prebuilt binaries or wheels,
+but rather must be built for each case with the compiler suite and matching MPI
+implementation provided by the user.
 
-**Windows Users**: 
+## Requirements
+Before building and installing the bare C++ tools or the Python package, users
+must provide
+* a compiler suite that includes a C++ compiler that supports the C++11
+  standard,
+* an MPI installation that is compatible with the compiler suite,
+* the [Meson build system](https://mesonbuild.com) and its prerequistes such as
+  Python 3 and [ninja](https://ninja-build.org), and
+* optionally the [Eigen software package](https://gitlab.com/libeigen/eigen).
 
-OpenBT relies on OpenMPI, which is not compatible with Windows. Thus you can work with Taweret by using Windows Subsystem for Linux (WSL). See instructions below for installing WSL.
+The Meson build system is setup to automatically detect the compiler suite and
+MPI installation to use.  If Eigen already exists in the system and Meson can
+find it, then Meson will use it for the build.  Otherwise, Meson will
+automatically obtain a copy of Eigen for internal use.
 
-**macOS Users**: 
+We presently test OpenBTMixing with both Open MPI and MPICH.  In addition, we
+have successfully tested with the Intel MPI implementation and have used the
+Python package with MPI implementations installed
+* via package managers such as Ubuntu's Advanced Packaging Tool (`apt`) and
+  [homebrew](https://brew.sh) on macOS;
+* by experts on clusters and that are available as modules; and
+* with `conda` from the prebuilt conda forge
+  [openmpi](https://anaconda.org/conda-forge/openmpi) package.
 
-There is currently no wheel in PyPI for macs with ARM processors.  While we intend
-to have a permanent solution to this issue soon (See Issue #6), at present
-affected users must manually build and install the package using the
-procedure given here.
+## Meson installation
+The Meson build system documentation suggests installing Meson via package
+manager when possible.  Please refer to that documentation for detailed and
+up-to-date installation information.
 
-We assume the use of the [homebrew package manager](https://brew.sh).  For
-ARM-based macs, homebrew installs packages in `/opt/homebrew`.  Please adapt
-appropriately the following if you are installing by other means or if homebrew
-installs to a different location.
+If Meson cannot be installed by package manager or the manager's version is too
+old, the following is contrary to Meson suggestions but has been used
+successfully to install Meson with Python into a dedicated virtual environment
+as well as to install `meson` in the `PATH` for use without needing to activate
+that virtual environment.
+```
+$ /path/to/target/python -m venv ~/local/venv/meson
+$ . ~/local/venv/meson/bin/activate
+$ which python
+$ python -m pip install --upgrade pip
+$ python -m pip install meson
+$ python -m pip list
+$ ln -s ~/local/venv/meson/bin/meson ~/local/bin
+<add ~/local/bin to PATH if desired and appropriate>
+$ deactivate
+$ which meson
+$ meson --version
+```
+Note that this `meson` virtual environment is for installing **just** the Meson
+build system.  Attempts to install `openbtmixing` into this virtual environment
+will likely fail with an error that the `mesonbuild` module cannot be found.
 
-Preinstall requirements:
-* Install homebrew if not already done so
-* `brew install open-mpi`
-* `brew install autoconf`
-* `brew install autoconf-archive`
-* `brew install automake`
-* `brew install libtool`
-* `brew install eigen`
+## Python package
+The OpenBTMixing Python package is distributed on
+[PyPI](https://pypi.org/project/openbtmixing/) as a source distribution that
+contains the C++ code and files needed by Meson to build the dedicated,
+standalone command line tools that the package will use.  The tools are built
+and installed automatically by Meson as part of executing
+```
+python -m pip install openbtmixing
+```
+By default, `pip install` does not show any of Meson's progress.  Users and
+developers interested in seeing how Meson satisifies dependencies and reviewing
+compiler output should pass `-v` to `pip install`.
 
-Confirm that installation is valid:
-* Run `which mpirun` and confirm that `mpirun` is found and located in a
-  reasonable location (e.g., `/opt/homebrew/bin/mpirun`).
-* Run `ls /opt/homebrew/include/eigen3/Eigen` and confirm that you see an
-  installation by confirming that folders such as `QR`, `SVD`, and `Dense` are
-  shown.
-
-Build the openbtmixing command line tools (CLTs):
-* Clone the [openbtmixing repository](https://github.com/jcyannotty/OpenBT) on
-  the machine that requires the installation
-* `cd /path/to/OpenBT`
-* `mkdir ~/local/OpenBT`
-* `CPATH=/opt/homebrew/include/eigen3 ./tools/build_openbt_clt.sh ~/local/OpenBT`
-* Run `ls ~/local/OpenBT/bin` and confirm that you see `openbtcli` and similar
-* Run `ls ~/local/OpenBT/lib` and confirm that you see `libtree.dylib` and similar
-* Add location of the CLTs to `PATH` with something like
-  `export PATH=$PATH:$HOME/local/OpenBT/bin`
-* Run `which openbtcli` and confirm that the `openbtcli` CLT is found and installed
-  in the expected location
-
-Note that users might want to add the alteration of `PATH` to a shell
-configuration file such as `.zshrc` so that it is automatically setup when the
-shell is started.
-
-To build and install the package, please first setup a virtual environment with
-your target Python and activate the environment.
-* `cd /path/to/OpenBT/openbtmixing_pypkg`
-* `python -m pip install --upgrade pip`
-* `python -m pip install build`
-* `python -m build --sdist`
-* `python -m pip install dist/openbtmixing-<version>.tar.gz`
-* `python -m pip list`
-* Run `/path/to/OpenBT/tools/test_python_installation.py` and confirm that all tests are
-  passing.
-
-# Installation for R Users:
-
-The Trees module is a Python interface which calls and executes a Ubuntu package in order to fit the mixing model and obtain the resulting predictions. This package is developed as a part of the Open Bayesian Trees Project (OpenBT). To install the Ubuntu package, please follow the steps below based on the operating system of choice.
-
-
-**Linux:**
-
-1. Download the OpenBT Ubuntu Linux 20.04 package:
-
-```    
-    $ wget -q https://github.com/jcyannotty/OpenBT/raw/main/openbt_mixing0.current_amd64-MPI_Ubuntu_20.04.deb 
-```    
-
-2. Install the package and reset the library cache:
-
-```    
-    $ cd /location/of/downloaded/.deb
-    $ dpkg -i openbt_mixing0.current_amd64-MPI_Ubuntu_20.04.deb
-    $ ldconfig
-
+Openbtmixing package installations can be minimally tested with
+```
+$ python
+>>> import openbtmixing
+>>> openbtmixing.__version__
+'<version>'
+>>> openbtmixing.test()
 ```
 
-**Mac OS/:X**
-
-1. Install the OS/X OpenMPI package by running the following `brew` commands in a terminal window:
-
+The package can also be built and installed from a clone of this repository with
 ```
-    $ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-    $ brew install open-mpi
-```    
+$ cd /path/to/OpenBT/openbtmixing_pypkg
+$ python -m build --sdist
+$ python -m pip install -v dist/openbtmixing-<version>.tar.gz
+```
+where we assume that the [build](https://build.pypa.io/en/stable/index.html)
+package has already been installed.
 
+Developers can setup a virtual environment with a developer/editable mode
+installation of the package with
+```
+$ /path/to/target/python -m venv /path/to/venv/my_venv
+$ . /path/to/venv/my_venv/bin/activate
+$ cd /path/to/OpenBT/openbtmixing_pypkg
+$ python -m pip install -v -e .
+```
+In this latter case, the command line tools are built automatically and
+installed at `/path/to/OpenBT/openbtmixing_pypkg/src/openbtmixing/bin`.  The
+Python package is hardcoded to use those tools so that the existence of another
+set of tools in the system and in `PATH` should not cause issues.
 
-2. Download the OpenBT OSX binary package: "OpenBT-Mixing-0.current.pkg".
+## C++ library & command line tool interface
+Developers and C++ users can directly build and install the command line tools,
+an OpenBTMixing library, and library tests with `tools/build_openbt_clt.sh`.
+Note that these do **not** need to be built in order to use the Python package.
 
-3. Install the OpenBT OSX package by double-clicking on the downloaded .pkg file and follow the on-screen instructions.
-
-
-**Windows:**
-
-OpenBT will run within the Windows 10 Windows Subsystem for Linux (WSL) environment. For instructions on installing WSL, please see [Ubuntu WSL](https://ubuntu.com/wsl). We recommend installing the Ubuntu 20.04 WSL build. 
-There are also instructions [here](https://wiki.ubuntu.com/WSL?action=subscribe&_ga=2.237944261.411635877.1601405226-783048612.1601405226#Installing_Packages_on_Ubuntu) on keeping your Ubuntu WSL up to date, or installing additional features like X support. Once you have installed the WSL Ubuntu layer, start the WSL Ubuntu shell from the start menu and then install the package:
-
-```    
-    $ cd /mnt/c/location/of/downloaded/.deb
-    $ dpkg -i openbt_mixing0.current_amd64-MPI_Ubuntu_20.04.deb
-
-```    
-
-# Local Compilation
-
-Alternatively, one could also download the source files and compile the project locally. If compiling locally, please ensure you have installed the approriate dependencies for MPI (see Mac OS/X above) and the [Eigen Library](https://eigen.tuxfamily.org/index.php?title=Main_Page). 
-
+## R package
+**TODO**: Needs to be written based on current state of affairs.
 
 # Examples
 
 The examples from the article "Model Mixing Using Bayesian Additive Regression Tress" are reproduced in the jupyter noteboook BART_BMM_Technometrics.ipynb. This notebook can be run locally or in a virtual environment such as google colab.
-
-
-# Related Software
-
-The BART Model Mixing software has been implemented in the [Taweret](https://github.com/TaweretOrg/Taweret/tree/main) Python package in conjunction with the [BAND](https://bandframework.github.io/) collaboration.

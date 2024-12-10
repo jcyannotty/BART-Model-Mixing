@@ -1,0 +1,85 @@
+name: Test OpenBTMixing Python Source Distribution
+env:
+  CLONE_PATH: ${{ github.workspace }}
+  PKG_ROOT:   ${{ github.workspace }}/openbtmixing_pypkg
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  #####----- FULL TESTING WITHOUT COVERAGE
+  # Prefer full end-to-end test of local wheel built on demand rather than
+  # testing in local clone alone.
+  #
+  # This also confirms that the test script is functional.
+  test_sdist:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-13, macos-14, macos-15,
+             ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+        mpi_impl: ["openmpi", "mpich"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        exclude:
+          # MPICH+Ubuntu24.04 tests presently fail because they detect only one
+          # MPI process instead of two.  I suspect that this is related to using
+          # an mpirun that is not associated with the MPI used to build the
+          # CLTs.  Note that Meson failed as expected when I didn't install any
+          # MPI implementation, which suggests that there isn't a default
+          # installation.  Unfortunately paths to mpirun and mpicxx don't offer
+          # much insight into what is found or if there are crossed
+          # installations.
+          #
+          # Next testing steps would be to build a minimal MPI program and see
+          # if I can reproduce the issue.
+          - os: ubuntu-24.04
+            mpi_impl: "mpich"
+
+    steps:
+    ##-- Setup Testing Environment
+    - name: Checkout OpenBTMixing
+      uses: actions/checkout@v4
+    - name: Install ${{ matrix.mpi_impl }}
+      run: |
+        if   [ "${{ runner.os }}" = "Linux" ]; then
+           sudo apt-get update
+           if   [ "${{ matrix.mpi_impl }}" = "openmpi" ]; then
+              sudo apt-get -y install openmpi-bin libopenmpi-dev
+           elif [ "${{ matrix.mpi_impl }}" = "mpich" ]; then
+              sudo apt-get -y install mpich libmpich-dev
+           else
+              echo "Cannot install ${{ matrix.mpi_impl }} for Linux"
+              exit 1
+           fi
+        elif [ "${{ runner.os }}" = "macOS" ]; then
+           if   [ "${{ matrix.mpi_impl }}" = "openmpi" ]; then
+              brew install open-mpi
+           elif [ "${{ matrix.mpi_impl }}" = "mpich" ]; then
+              brew install mpich
+           else
+              echo "Cannot install ${{ matrix.mpi_impl }} for macOS"
+              exit 1
+           fi
+        fi
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup Python dependencies
+      run: $CLONE_PATH/.github/workflows/setup_base_python.sh ${{ runner.os }}
+    - name: Install Meson build system
+      run: $CLONE_PATH/.github/workflows/install_meson.sh ${{ github.workspace }} ${{ runner.os }}
+
+    ##-- Run full test suite
+    - name: Run full OpenBtMixing test suite
+      run: |
+        which meson
+        pushd $PKG_ROOT
+        python -m build --sdist
+        python -m pip install -v dist/openbtmixing-*.tar.gz
+        popd
+        $CLONE_PATH/tools/test_python_installation.py

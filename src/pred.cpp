@@ -138,12 +138,12 @@ int main(int argc, char* argv[])
    if(tc<=1){
       cout << "Error: tc=" << tc << endl;
       MPI_Finalize();
-      return 0; //need at least 2 processes! 
+      return 1; //need at least 2 processes! 
    } 
    if(tc!=mpitc) {
       cout << "Error: tc does not match mpitc" << endl;
       MPI_Finalize();
-      return 0; //mismatch between how MPI was started and how the data is prepared according to tc.
+      return 2; //mismatch between how MPI was started and how the data is prepared according to tc.
    }
 // #else
 //    if(tc!=1) return 0; //serial mode should have no slave threads!
@@ -281,13 +281,13 @@ if(modeltype!=MODEL_MIXBART){
    imf >> im;
    imf >> imh;
 #ifdef _OPENMPI
-   if(nd!=ind) { cout << "Error loading posterior trees" << endl; MPI_Finalize(); return 0; }
-   if(m!=im) { cout << "Error loading posterior trees" << endl; MPI_Finalize(); return 0; }
-   if(mh!=imh) { cout << "Error loading posterior trees"  << endl; MPI_Finalize(); return 0; }
+   if(nd!=ind) { cout << "Error loading posterior trees" << endl; MPI_Finalize(); return 3; }
+   if(m!=im) { cout << "Error loading posterior trees" << endl; MPI_Finalize(); return 4; }
+   if(mh!=imh) { cout << "Error loading posterior trees"  << endl; MPI_Finalize(); return 5; }
 #else
-   if(nd!=ind) { cout << "Error loading posterior trees" << endl; return 0; }
-   if(m!=im) { cout << "Error loading posterior trees" << endl; return 0; }
-   if(mh!=imh) { cout << "Error loading posterior trees" << endl; return 0; }
+   if(nd!=ind) { cout << "Error loading posterior trees" << endl; return 3; }
+   if(m!=im) { cout << "Error loading posterior trees" << endl; return 4; }
+   if(mh!=imh) { cout << "Error loading posterior trees" << endl; return 5; }
 #endif
 
    size_t temp=0;
@@ -501,13 +501,13 @@ if(modeltype!=MODEL_MIXBART){
    imf >> im;
    imf >> imh;
 #ifdef _OPENMPI
-   if(nd!=ind) { cout << "Error loading posterior trees"<< "nd = " << nd << " -- ind = " << ind << endl; MPI_Finalize(); return 0; }
-   if(m!=im) { cout << "Error loading posterior trees" << "m = " << m << " -- im = " << im<< endl; MPI_Finalize(); return 0; }
-   if(mh!=imh) { cout << "Error loading posterior trees"  << endl; MPI_Finalize(); return 0; }
+   if(nd!=ind) { cout << "Error loading posterior trees"<< "nd = " << nd << " -- ind = " << ind << endl; MPI_Finalize(); return 6; }
+   if(m!=im) { cout << "Error loading posterior trees" << "m = " << m << " -- im = " << im<< endl; MPI_Finalize(); return 7; }
+   if(mh!=imh) { cout << "Error loading posterior trees"  << endl; MPI_Finalize(); return 8; }
 #else
-   if(nd!=ind) { cout << "Error loading posterior trees" << "nd = " << nd << " -- ind = " << ind << endl; return 0; }
-   if(m!=im) { cout << "Error loading posterior trees" << "m = " << m << " -- im = " << im<< endl; return 0; }
-   if(mh!=imh) { cout << "Error loading posterior trees"  << endl; return 0; }
+   if(nd!=ind) { cout << "Error loading posterior trees" << "nd = " << nd << " -- ind = " << ind << endl; return 6; }
+   if(m!=im) { cout << "Error loading posterior trees" << "m = " << m << " -- im = " << im<< endl; return 7; }
+   if(mh!=imh) { cout << "Error loading posterior trees"  << endl; return 8; }
 #endif
 
    size_t temp=0;

@@ -1,0 +1,6 @@
+option('verbose', type : 'boolean', value : false,
+       description : 'Enable verbose OpenBT command line tool output if true')
+option('use_mpi', type : 'boolean', value : true,
+       description : 'Build with MPI support if true')
+option('pypkg', type : 'boolean', value : false,
+       description : 'Minimal build for installing Python package only if true')

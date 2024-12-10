@@ -1,0 +1,71 @@
+name: Test OpenBTMixing in Anaconda
+env:
+  CLONE_PATH: ${{ github.workspace }}
+  PKG_ROOT:   ${{ github.workspace }}/openbtmixing_pypkg
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  #####----- FULL TESTING WITHOUT COVERAGE
+  # Prefer full end-to-end test of local wheel built on demand rather than
+  # testing in local clone alone.
+  #
+  # This also confirms that the test script is functional.
+  test_anaconda:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-13, macos-14, macos-15,
+             ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+        mpi_impl: ["openmpi"]
+        python-version: ["3.13"]
+        exclude:
+          # Prebuilt Intel MPI package not available for macOS
+          - os: [macos-13, macos-14, macos-15]
+            mpi_impl: "impi_rt"
+
+    steps:
+    ##-- Setup Testing Environment
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        auto-update-conda: true
+        conda-remove-defaults: "true"
+        python-version: ${{ matrix.python-version }}
+    - name: Checkout OpenBTMixing
+      uses: actions/checkout@v4
+    - name: Setup miniconda & log
+      shell: bash -el {0}
+      run: |
+        which python
+        which pip
+        python --version
+        python -m pip install build
+        conda info
+        conda list
+        python -m pip list
+    - name: Install prebuilt ${{ matrix.mpi_impl }} via conda
+      shell: bash -el {0}
+      run: |
+        conda install -c conda-forge ${{ matrix.mpi_impl }}
+        conda list
+        which mpicxx
+        mpicxx -show
+    - name: Install Meson build system
+      run: $CLONE_PATH/.github/workflows/install_meson.sh ${{ github.workspace }} ${{ runner.os }}
+
+    ##-- Run full test suite
+    - name: Run full OpenBtMixing test suite
+      shell: bash -el {0}
+      run: |
+        which python
+        which meson
+        pushd $PKG_ROOT
+        python -m build --sdist
+        python -m pip install -v dist/openbtmixing-*.tar.gz
+        popd
+        $CLONE_PATH/tools/test_python_installation.py

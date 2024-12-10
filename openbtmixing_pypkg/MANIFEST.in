@@ -1,1 +1,6 @@
 include LICENSE VERSION
+include cpp/meson.build
+include cpp/meson.options
+include cpp/includes/*.h
+include cpp/src/*.cpp
+include cpp/subprojects/*.wrap
